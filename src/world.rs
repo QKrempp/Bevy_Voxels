@@ -82,6 +82,11 @@ impl VxWorld {
     }
 }
 
+fn coord_to_usize(chunk_coord: (usize, usize, usize), cube_coord: (usize, usize, usize)) -> usize {
+    (chunk_coord.0 + chunk_coord.2 * WORLD_W + chunk_coord.1 * WORLD_AREA) * CHUNK_VOLUME
+        + (cube_coord.0 + cube_coord.2 * CHUNK_SIZE + cube_coord.1 * CHUNK_AREA)
+}
+
 fn map_generation() -> Vec<chunk::CubeTypes> {
     let mut voxels = vec![CubeTypes::Empty; WORLD_VOL * CHUNK_VOLUME];
     for c_x in 0..WORLD_W {
@@ -98,8 +103,8 @@ fn map_generation() -> Vec<chunk::CubeTypes> {
                             ) + 1.0);
                         for y in 0..CHUNK_SIZE {
                             if ((c_y * CHUNK_SIZE + y) as f32) < height {
-                                voxels[(c_x + c_z * WORLD_W + c_y * WORLD_AREA) * CHUNK_VOLUME
-                                    + (x + z * CHUNK_SIZE + y * CHUNK_AREA)] = CubeTypes::Dirt;
+                                voxels[coord_to_usize((c_x, c_y, c_z), (x, y, z))] =
+                                    CubeTypes::Dirt;
                             }
                         }
                     }

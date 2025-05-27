@@ -56,6 +56,8 @@ fn get_cube_type(voxels: &[CubeTypes], chunk_coord: &Vec3, cube_coord: &Vec3) ->
         .clone()
 }
 
+// fn _is_void(voxels: &[CubeTypes], chunk_coord: &Vec3, cube_coord: &Vec3) {}
+
 fn is_void(
     voxels: &[CubeTypes],
     chunk_coord: &Vec3,
