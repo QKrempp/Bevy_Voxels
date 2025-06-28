@@ -69,10 +69,10 @@ impl VxWorld {
             .into_iter()
             .map(|i| {
                 chunk::VxChunkMesh::new(
-                    Vec3::new(
-                        (i % WORLD_W) as f32,
-                        (i / WORLD_AREA) as f32,
-                        ((i % WORLD_AREA) / WORLD_W) as f32,
+                    (
+                        (i % WORLD_W),
+                        (i / WORLD_AREA),
+                        ((i % WORLD_AREA) / WORLD_W),
                     ),
                     &_voxels,
                 )
@@ -130,7 +130,14 @@ pub fn spawn_world_model(
                 color: LinearRgba::WHITE,
                 color_texture: Some(asset_server.load("textures.png")),
             })),
-            Transform::from_translation((CHUNK_SIZE as f32) * chunk.coord),
+            Transform::from_translation(
+                (CHUNK_SIZE as f32)
+                    * Vec3::from((
+                        chunk.coord.0 as f32,
+                        chunk.coord.1 as f32,
+                        chunk.coord.2 as f32,
+                    )),
+            ),
         ));
     }
 

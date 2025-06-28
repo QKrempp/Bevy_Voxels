@@ -16,7 +16,7 @@ impl Plugin for BevyVoxelPlugin {
         app.add_systems(
             Startup,
             (
-                cursor_grab,
+                // cursor_grab,
                 player::spawn_view_model,
                 world::spawn_world_model,
             ),
@@ -25,9 +25,9 @@ impl Plugin for BevyVoxelPlugin {
     }
 }
 
-fn cursor_grab(mut q_windows: Query<&mut Window, With<PrimaryWindow>>) {
-    let mut primary_window = q_windows.single_mut();
+// fn cursor_grab(mut q_windows: Query<&mut Window, With<PrimaryWindow>>) {
+//     let mut primary_window = q_windows.single_mut();
 
-    primary_window.cursor_options.grab_mode = CursorGrabMode::Locked;
-    primary_window.cursor_options.visible = false;
-}
+//     primary_window.cursor_options.grab_mode = CursorGrabMode::Locked;
+//     primary_window.cursor_options.visible = false;
+// }

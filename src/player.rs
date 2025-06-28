@@ -45,7 +45,7 @@ pub fn rotate_player(
     accumulated_mouse_motion: Res<AccumulatedMouseMotion>,
     mut player: Query<(&mut Transform, &CameraSensitivity), With<Player>>,
 ) {
-    let Ok((mut transform, camera_sensitivity)) = player.get_single_mut() else {
+    let Ok((mut transform, camera_sensitivity)) = player.single_mut() else {
         return;
     };
     let delta = accumulated_mouse_motion.delta;
@@ -74,7 +74,7 @@ pub fn move_player(
     // NOTE: The *xxx_directions* vectors definitions are scoped to avoid the computation if no key is pressed. It might be
     // useless.
 
-    let Ok(mut transform) = player.get_single_mut() else {
+    let Ok(mut transform) = player.single_mut() else {
         return;
     };
 

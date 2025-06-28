@@ -22,14 +22,27 @@ pub enum FaceType {
     Front,
 }
 
+impl Into<(i8, i8, i8)> for FaceType {
+    fn into(self) -> (i8, i8, i8) {
+        match self {
+            FaceType::Top => (0, 1, 0),
+            FaceType::Bottom => (0, -1, 0),
+            FaceType::Right => (1, 0, 0),
+            FaceType::Left => (-1, 0, 0),
+            FaceType::Back => (0, 0, 1),
+            FaceType::Front => (0, 0, -1),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct VxChunkMesh {
     pub mesh: Mesh,
-    pub coord: Vec3,
+    pub coord: (usize, usize, usize),
 }
 
 impl VxChunkMesh {
-    pub fn new(coord: Vec3, voxels: &[CubeTypes]) -> Self {
+    pub fn new(coord: (usize, usize, usize), voxels: &[CubeTypes]) -> Self {
         let (vertices_coord, uv_coord, vertices_normal, vertices_order, vertices_type, vertices_id) =
             build_mesh(voxels, &coord);
         println!("Created chunk with coord {:?}", coord);
@@ -49,105 +62,222 @@ impl VxChunkMesh {
     }
 }
 
-fn get_cube_type(voxels: &[CubeTypes], chunk_coord: &Vec3, cube_coord: &Vec3) -> CubeTypes {
-    voxels[chunk_coord.dot(Vec3::new(1.0, WORLD_AREA as f32, WORLD_W as f32)) as usize
-        * CHUNK_VOLUME
-        + cube_coord.dot(Vec3::new(1.0, CHUNK_AREA as f32, CHUNK_SIZE as f32)) as usize]
-        .clone()
+fn get_cube_type(
+    voxels: &[CubeTypes],
+    chunk_coord: &(usize, usize, usize),
+    cube_coord: &(usize, usize, usize),
+) -> CubeTypes {
+    // let index = chunk_coord.dot(Vec3::new(1.0, WORLD_AREA as f32, WORLD_W as f32)) as usize
+    //     * CHUNK_VOLUME
+    //     + cube_coord.dot(Vec3::new(1.0, CHUNK_AREA as f32, CHUNK_SIZE as f32)) as usize;
+
+    match get_id(chunk_coord, cube_coord, &(0, 0, 0)) {
+        Some(index) => voxels[index].clone(),
+        None => CubeTypes::Empty,
+    }
+}
+
+fn is_void(
+    voxels: &[CubeTypes],
+    chunk_coord: &(usize, usize, usize),
+    cube_coord: &(usize, usize, usize),
+    direction: &(i8, i8, i8),
+) -> bool {
+    match get_id(chunk_coord, cube_coord, direction) {
+        Some(index) => voxels[index] == CubeTypes::Empty,
+        None => true,
+    }
 }
 
 // fn _is_void(voxels: &[CubeTypes], chunk_coord: &Vec3, cube_coord: &Vec3) {}
 
-fn is_void(
-    voxels: &[CubeTypes],
-    chunk_coord: &Vec3,
-    cube_coord: &Vec3,
-    face_type: &FaceType,
-) -> bool {
-    match face_type {
-        FaceType::Top => {
-            if cube_coord.y as usize == CHUNK_SIZE - 1 {
-                if chunk_coord.y as usize == WORLD_H - 1 {
-                    true
-                } else {
-                    get_cube_type(voxels, &(chunk_coord + Vec3::Y), &(cube_coord.with_y(0.0)))
-                        == CubeTypes::Empty
-                }
+fn get_id(
+    chunk_coord: &(usize, usize, usize),
+    cube_coord: &(usize, usize, usize),
+    direction: &(i8, i8, i8),
+) -> Option<usize> {
+    let mut index = 0;
+
+    // Index due to X component
+    if direction.0 >= 0 {
+        let direction_usize = direction.0 as usize;
+        if cube_coord.0 + direction_usize >= CHUNK_SIZE {
+            if chunk_coord.0 + 1 >= WORLD_W {
+                return None;
             } else {
-                get_cube_type(voxels, chunk_coord, &(cube_coord + Vec3::Y)) == CubeTypes::Empty
+                index += (chunk_coord.0 + 1) * CHUNK_VOLUME
+                    + (cube_coord.0 + direction_usize - CHUNK_SIZE)
             }
+        } else {
+            index += chunk_coord.0 * CHUNK_VOLUME + cube_coord.0 + direction_usize
         }
-        FaceType::Bottom => {
-            if cube_coord.y as usize == 0 {
-                if chunk_coord.y as usize == 0 {
-                    true
-                } else {
-                    get_cube_type(
-                        voxels,
-                        &(chunk_coord - Vec3::Y),
-                        &(cube_coord.with_y((CHUNK_SIZE - 1) as f32)),
-                    ) == CubeTypes::Empty
-                }
+    } else {
+        let direction_usize = -direction.0 as usize;
+        if cube_coord.0 < direction_usize {
+            if chunk_coord.0 == 0 {
+                return None;
             } else {
-                get_cube_type(voxels, chunk_coord, &(cube_coord - Vec3::Y)) == CubeTypes::Empty
+                index += (chunk_coord.0 - 1) * CHUNK_VOLUME
+                    + (CHUNK_SIZE - (direction_usize - cube_coord.0));
             }
-        }
-        FaceType::Right => {
-            if cube_coord.x as usize == CHUNK_SIZE - 1 {
-                if chunk_coord.x as usize == WORLD_W - 1 {
-                    true
-                } else {
-                    get_cube_type(voxels, &(chunk_coord + Vec3::X), &(cube_coord.with_x(0.0)))
-                        == CubeTypes::Empty
-                }
-            } else {
-                get_cube_type(voxels, chunk_coord, &(cube_coord + Vec3::X)) == CubeTypes::Empty
-            }
-        }
-        FaceType::Left => {
-            if cube_coord.x as usize == 0 {
-                if chunk_coord.x as usize == 0 {
-                    true
-                } else {
-                    get_cube_type(
-                        voxels,
-                        &(chunk_coord - Vec3::X),
-                        &(cube_coord.with_x((CHUNK_SIZE - 1) as f32)),
-                    ) == CubeTypes::Empty
-                }
-            } else {
-                get_cube_type(voxels, chunk_coord, &(cube_coord - Vec3::X)) == CubeTypes::Empty
-            }
-        }
-        FaceType::Back => {
-            if cube_coord.z as usize == CHUNK_SIZE - 1 {
-                if chunk_coord.z as usize == WORLD_D - 1 {
-                    true
-                } else {
-                    get_cube_type(voxels, &(chunk_coord + Vec3::Z), &(cube_coord.with_z(0.0)))
-                        == CubeTypes::Empty
-                }
-            } else {
-                get_cube_type(voxels, chunk_coord, &(cube_coord + Vec3::Z)) == CubeTypes::Empty
-            }
-        }
-        FaceType::Front => {
-            if cube_coord.z as usize == 0 {
-                if chunk_coord.z as usize == 0 {
-                    true
-                } else {
-                    get_cube_type(
-                        voxels,
-                        &(chunk_coord - Vec3::Z),
-                        &(cube_coord.with_z((CHUNK_SIZE - 1) as f32)),
-                    ) == CubeTypes::Empty
-                }
-            } else {
-                get_cube_type(voxels, chunk_coord, &(cube_coord - Vec3::Z)) == CubeTypes::Empty
-            }
+        } else {
+            index += chunk_coord.0 * CHUNK_VOLUME + cube_coord.0 - direction_usize;
         }
     }
+
+    // Index due to Y component
+    if direction.1 >= 0 {
+        let direction_usize = direction.1 as usize;
+        if cube_coord.1 + direction_usize >= CHUNK_SIZE {
+            if chunk_coord.1 + 1 >= WORLD_H {
+                return None;
+            } else {
+                index += (chunk_coord.1 + 1) * WORLD_AREA * CHUNK_VOLUME
+                    + (cube_coord.1 + direction_usize - CHUNK_SIZE) * CHUNK_AREA;
+            }
+        } else {
+            index += chunk_coord.1 * WORLD_AREA * CHUNK_VOLUME
+                + (cube_coord.1 + direction_usize) * CHUNK_AREA;
+        }
+    } else {
+        let direction_usize = -direction.1 as usize;
+        if cube_coord.1 < direction_usize {
+            if chunk_coord.1 == 0 {
+                return None;
+            } else {
+                index += (chunk_coord.1 - 1) * WORLD_AREA * CHUNK_VOLUME
+                    + (CHUNK_SIZE - (direction_usize - cube_coord.1)) * CHUNK_AREA;
+            }
+        } else {
+            index += chunk_coord.1 * WORLD_AREA * CHUNK_VOLUME
+                + (cube_coord.1 - direction_usize) * CHUNK_AREA;
+        }
+    }
+
+    // Index due to Z component
+    if direction.2 >= 0 {
+        let direction_usize = direction.2 as usize;
+        if cube_coord.2 + direction_usize >= CHUNK_SIZE {
+            if chunk_coord.2 + 1 >= WORLD_D {
+                return None;
+            } else {
+                index += (chunk_coord.2 + 1) * WORLD_W * CHUNK_VOLUME
+                    + (cube_coord.2 + direction_usize - CHUNK_SIZE) * CHUNK_SIZE;
+            }
+        } else {
+            index += chunk_coord.2 * WORLD_W * CHUNK_VOLUME
+                + (cube_coord.2 + direction_usize) * CHUNK_SIZE;
+        }
+    } else {
+        let direction_usize = -direction.2 as usize;
+        if cube_coord.2 < direction_usize {
+            if chunk_coord.2 == 0 {
+                return None;
+            } else {
+                index += (chunk_coord.2 - 1) * WORLD_W * CHUNK_VOLUME
+                    + (CHUNK_SIZE - (direction_usize - cube_coord.2)) * CHUNK_SIZE;
+            }
+        } else {
+            index += chunk_coord.2 * WORLD_W * CHUNK_VOLUME
+                + (cube_coord.2 - direction_usize) * CHUNK_SIZE;
+        }
+    }
+    if index == 1638400 {
+        dbg!(chunk_coord, cube_coord, direction);
+    }
+    Some(index)
 }
+
+// fn is_void(
+//     voxels: &[CubeTypes],
+//     chunk_coord: &Vec3,
+//     cube_coord: &Vec3,
+//     face_type: &FaceType,
+// ) -> bool {
+//     match face_type {
+//         FaceType::Top => {
+//             if cube_coord.y as usize == CHUNK_SIZE - 1 {
+//                 if chunk_coord.y as usize == WORLD_H - 1 {
+//                     true
+//                 } else {
+//                     get_cube_type(voxels, &(chunk_coord + Vec3::Y), &(cube_coord.with_y(0.0)))
+//                         == CubeTypes::Empty
+//                 }
+//             } else {
+//                 get_cube_type(voxels, chunk_coord, &(cube_coord + Vec3::Y)) == CubeTypes::Empty
+//             }
+//         }
+//         FaceType::Bottom => {
+//             if cube_coord.y as usize == 0 {
+//                 if chunk_coord.y as usize == 0 {
+//                     true
+//                 } else {
+//                     get_cube_type(
+//                         voxels,
+//                         &(chunk_coord - Vec3::Y),
+//                         &(cube_coord.with_y((CHUNK_SIZE - 1) as f32)),
+//                     ) == CubeTypes::Empty
+//                 }
+//             } else {
+//                 get_cube_type(voxels, chunk_coord, &(cube_coord - Vec3::Y)) == CubeTypes::Empty
+//             }
+//         }
+//         FaceType::Right => {
+//             if cube_coord.x as usize == CHUNK_SIZE - 1 {
+//                 if chunk_coord.x as usize == WORLD_W - 1 {
+//                     true
+//                 } else {
+//                     get_cube_type(voxels, &(chunk_coord + Vec3::X), &(cube_coord.with_x(0.0)))
+//                         == CubeTypes::Empty
+//                 }
+//             } else {
+//                 get_cube_type(voxels, chunk_coord, &(cube_coord + Vec3::X)) == CubeTypes::Empty
+//             }
+//         }
+//         FaceType::Left => {
+//             if cube_coord.x as usize == 0 {
+//                 if chunk_coord.x as usize == 0 {
+//                     true
+//                 } else {
+//                     get_cube_type(
+//                         voxels,
+//                         &(chunk_coord - Vec3::X),
+//                         &(cube_coord.with_x((CHUNK_SIZE - 1) as f32)),
+//                     ) == CubeTypes::Empty
+//                 }
+//             } else {
+//                 get_cube_type(voxels, chunk_coord, &(cube_coord - Vec3::X)) == CubeTypes::Empty
+//             }
+//         }
+//         FaceType::Back => {
+//             if cube_coord.z as usize == CHUNK_SIZE - 1 {
+//                 if chunk_coord.z as usize == WORLD_D - 1 {
+//                     true
+//                 } else {
+//                     get_cube_type(voxels, &(chunk_coord + Vec3::Z), &(cube_coord.with_z(0.0)))
+//                         == CubeTypes::Empty
+//                 }
+//             } else {
+//                 get_cube_type(voxels, chunk_coord, &(cube_coord + Vec3::Z)) == CubeTypes::Empty
+//             }
+//         }
+//         FaceType::Front => {
+//             if cube_coord.z as usize == 0 {
+//                 if chunk_coord.z as usize == 0 {
+//                     true
+//                 } else {
+//                     get_cube_type(
+//                         voxels,
+//                         &(chunk_coord - Vec3::Z),
+//                         &(cube_coord.with_z((CHUNK_SIZE - 1) as f32)),
+//                     ) == CubeTypes::Empty
+//                 }
+//             } else {
+//                 get_cube_type(voxels, chunk_coord, &(cube_coord - Vec3::Z)) == CubeTypes::Empty
+//             }
+//         }
+//     }
+// }
 
 fn map_texture(uv_coord: &mut Vec<Vec2>, coord_x: u32, coord_y: u32) {
     if coord_x < 32 && coord_y < 32 {
@@ -261,7 +391,7 @@ fn add_face(
 
 fn build_mesh(
     voxels: &[CubeTypes],
-    chunk_coord: &Vec3,
+    chunk_coord: &(usize, usize, usize),
 ) -> (
     Vec<Vec3>,
     Vec<Vec2>,
@@ -288,33 +418,34 @@ fn build_mesh(
     for p_x in 0..CHUNK_SIZE {
         for p_y in 0..CHUNK_SIZE {
             for p_z in 0..CHUNK_SIZE {
-                let cube_coord = Vec3::new(p_x as f32, p_y as f32, p_z as f32);
+                // let cube_coord = Vec3::new(p_x as f32, p_y as f32, p_z as f32);
+                let cube_coord = (p_x, p_y, p_z);
                 if get_cube_type(voxels, chunk_coord, &cube_coord) != CubeTypes::Empty {
                     let cube_type = get_cube_type(voxels, chunk_coord, &cube_coord);
                     let mut face_to_add: Vec<FaceType> = Vec::new();
 
                     // Top vertices
-                    if is_void(voxels, chunk_coord, &cube_coord, &FaceType::Top) {
+                    if is_void(voxels, chunk_coord, &cube_coord, &FaceType::Top.into()) {
                         face_to_add.push(FaceType::Top);
                     }
                     // Bottom vertices_coord
-                    if is_void(voxels, chunk_coord, &cube_coord, &FaceType::Bottom) {
+                    if is_void(voxels, chunk_coord, &cube_coord, &FaceType::Bottom.into()) {
                         face_to_add.push(FaceType::Bottom)
                     }
                     // Right vertices_coord
-                    if is_void(voxels, chunk_coord, &cube_coord, &FaceType::Right) {
+                    if is_void(voxels, chunk_coord, &cube_coord, &FaceType::Right.into()) {
                         face_to_add.push(FaceType::Right);
                     }
                     // Left vertices_coord
-                    if is_void(voxels, chunk_coord, &cube_coord, &FaceType::Left) {
+                    if is_void(voxels, chunk_coord, &cube_coord, &FaceType::Left.into()) {
                         face_to_add.push(FaceType::Left);
                     }
                     // Back vertices_coord
-                    if is_void(voxels, chunk_coord, &cube_coord, &FaceType::Back) {
+                    if is_void(voxels, chunk_coord, &cube_coord, &FaceType::Back.into()) {
                         face_to_add.push(FaceType::Back);
                     }
                     // Front vertices_coord
-                    if is_void(voxels, chunk_coord, &cube_coord, &FaceType::Front) {
+                    if is_void(voxels, chunk_coord, &cube_coord, &FaceType::Front.into()) {
                         face_to_add.push(FaceType::Front);
                     }
                     for face in face_to_add {
