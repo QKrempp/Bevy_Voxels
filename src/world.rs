@@ -4,10 +4,14 @@ use bevy::prelude::*;
 use bevy::reflect::TypePath;
 use bevy::render::mesh::MeshVertexAttribute;
 use bevy::render::render_resource::{AsBindGroup, ShaderRef, VertexFormat};
-use chunk::CubeTypes;
+use chunk::{CubeTypes, VxWorldCoord};
 use noisy_bevy::simplex_noise_2d;
 
 mod chunk;
+
+use super::{
+    CHUNK_AREA, CHUNK_SIZE, CHUNK_VOLUME, WORLD_AREA, WORLD_D, WORLD_H, WORLD_VOL, WORLD_W,
+};
 
 const ATTRIBUTE_VX_TYPE: MeshVertexAttribute =
     MeshVertexAttribute::new("VxType", 10000, VertexFormat::Uint32);
@@ -40,22 +44,14 @@ impl Material for ChunkMaterial {
     ) -> Result<(), bevy::render::render_resource::SpecializedMeshPipelineError> {
         let vertex_layout = layout.0.get_layout(&[
             Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
-            ATTRIBUTE_VX_TYPE.at_shader_location(1),
-            ATTRIBUTE_VX_AO.at_shader_location(2),
+            Mesh::ATTRIBUTE_UV_0.at_shader_location(1),
+            ATTRIBUTE_VX_TYPE.at_shader_location(2),
+            ATTRIBUTE_VX_AO.at_shader_location(3),
         ])?;
         descriptor.vertex.buffers = vec![vertex_layout];
         Ok(())
     }
 }
-
-pub const WORLD_W: usize = 5;
-pub const WORLD_H: usize = 2;
-pub const WORLD_D: usize = 5;
-pub const WORLD_AREA: usize = WORLD_W * WORLD_D;
-pub const WORLD_VOL: usize = WORLD_AREA * WORLD_H;
-pub const CHUNK_SIZE: usize = 32;
-pub const CHUNK_AREA: usize = CHUNK_SIZE * CHUNK_SIZE;
-pub const CHUNK_VOLUME: usize = CHUNK_SIZE * CHUNK_AREA;
 
 struct VxWorld {
     chunks: Vec<chunk::VxChunkMesh>,
@@ -82,11 +78,6 @@ impl VxWorld {
     }
 }
 
-fn coord_to_usize(chunk_coord: (usize, usize, usize), cube_coord: (usize, usize, usize)) -> usize {
-    (chunk_coord.0 + chunk_coord.2 * WORLD_W + chunk_coord.1 * WORLD_AREA) * CHUNK_VOLUME
-        + (cube_coord.0 + cube_coord.2 * CHUNK_SIZE + cube_coord.1 * CHUNK_AREA)
-}
-
 fn map_generation() -> Vec<chunk::CubeTypes> {
     let mut voxels = vec![CubeTypes::Empty; WORLD_VOL * CHUNK_VOLUME];
     for c_x in 0..WORLD_W {
@@ -103,7 +94,7 @@ fn map_generation() -> Vec<chunk::CubeTypes> {
                             ) + 1.0);
                         for y in 0..CHUNK_SIZE {
                             if ((c_y * CHUNK_SIZE + y) as f32) < height {
-                                voxels[coord_to_usize((c_x, c_y, c_z), (x, y, z))] =
+                                voxels[VxWorldCoord::new((c_x, c_y, c_z), (x, y, z)).get_id()] =
                                     CubeTypes::Dirt;
                             }
                         }
@@ -140,29 +131,4 @@ pub fn spawn_world_model(
             ),
         ));
     }
-
-    //    commands.spawn((
-    //        Mesh3d(meshes.add(Cuboid::default())),
-    //        MeshMaterial3d(materials.add(ChunkMaterial {
-    //            color: LinearRgba::BLUE,
-    //            color_texture: Some(asset_server.load("textures.png")),
-    //            alpha_mode: AlphaMode::Blend,
-    //        })),
-    //    ));
-
-    // light
-    //    commands.spawn((
-    //        DirectionalLight {
-    //            illuminance: 15000.0,
-    //            shadows_enabled: true,
-    //            ..default()
-    //        },
-    //        Transform::from_rotation(Quat::from_euler(EulerRot::ZYX, 0.0, PI * -0.15, PI * -0.15)),
-    //        CascadeShadowConfigBuilder {
-    //            maximum_distance: 3.0,
-    //            first_cascade_far_bound: 0.9,
-    //            ..default()
-    //        }
-    //        .build(),
-    //    ));
 }

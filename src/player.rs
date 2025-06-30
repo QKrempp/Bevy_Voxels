@@ -2,6 +2,8 @@ use std::f32::consts::FRAC_PI_2;
 
 use bevy::{input::mouse::AccumulatedMouseMotion, prelude::*};
 
+use super::PLAYER_POS;
+
 /// A struct to identify the Player component through queries
 #[derive(Debug, Component)]
 pub struct Player;
@@ -26,7 +28,7 @@ pub fn spawn_view_model(mut commands: Commands) {
         .spawn((
             Player,
             CameraSensitivity::default(),
-            Transform::from_xyz(0.0, 48.0, 0.0),
+            Transform::from_translation(PLAYER_POS),
             Visibility::default(),
         ))
         .with_children(|parent| {
@@ -79,23 +81,29 @@ pub fn move_player(
     };
 
     let mut velocity: Vec3 = Vec3::ZERO;
+    let speed = 0.2;
 
-    if input.pressed(KeyCode::ArrowDown) {
-        let face_direction = transform.rotation.mul_vec3(Vec3::new(0.0, 0.0, 1.0));
-        velocity += 0.1 * face_direction;
+    if input.pressed(KeyCode::ArrowDown) || input.pressed(KeyCode::KeyS) {
+        let face_direction = transform.rotation.mul_vec3(Vec3::Z);
+        velocity += speed * face_direction;
     }
-    if input.pressed(KeyCode::ArrowUp) {
-        let face_direction = transform.rotation.mul_vec3(Vec3::new(0.0, 0.0, 1.0));
-        velocity += -0.1 * face_direction;
+    if input.pressed(KeyCode::ArrowUp) || input.pressed(KeyCode::KeyW) {
+        let face_direction = transform.rotation.mul_vec3(Vec3::Z);
+        velocity -= speed * face_direction;
     }
-    if input.pressed(KeyCode::ArrowRight) {
-        let straff_direction = transform.rotation.mul_vec3(Vec3::new(1.0, 0.0, 0.0));
-        velocity += 0.1 * straff_direction;
+    if input.pressed(KeyCode::ArrowRight) || input.pressed(KeyCode::KeyD) {
+        let straff_direction = transform.rotation.mul_vec3(Vec3::X);
+        velocity += speed * straff_direction;
     }
-    if input.pressed(KeyCode::ArrowLeft) {
-        let straff_direction = transform.rotation.mul_vec3(Vec3::new(1.0, 0.0, 0.0));
-        velocity += -0.1 * straff_direction;
+    if input.pressed(KeyCode::ArrowLeft) || input.pressed(KeyCode::KeyA) {
+        let straff_direction = transform.rotation.mul_vec3(Vec3::X);
+        velocity -= speed * straff_direction;
     }
-
+    if input.pressed(KeyCode::Space) {
+        velocity += speed * Vec3::Y
+    }
+    if input.pressed(KeyCode::ShiftLeft) {
+        velocity -= speed * Vec3::Y
+    }
     transform.translation += velocity;
 }

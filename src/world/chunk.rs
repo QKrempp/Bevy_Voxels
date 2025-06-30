@@ -62,12 +62,22 @@ impl VxChunkMesh {
     }
 }
 
-struct VxWorldCoord {
+pub struct VxWorldCoord {
     chunk_coord: (usize, usize, usize),
     cube_coord: (usize, usize, usize),
 }
 
 impl VxWorldCoord {
+    pub fn new(
+        chunk_coord: (usize, usize, usize),
+        cube_coord: (usize, usize, usize),
+    ) -> VxWorldCoord {
+        VxWorldCoord {
+            chunk_coord,
+            cube_coord,
+        }
+    }
+
     fn move_direction(&self, direction: &(i8, i8, i8)) -> Option<VxWorldCoord> {
         let mut new_world_coord = Self { ..*self };
         // Index due to X component
@@ -156,7 +166,7 @@ impl VxWorldCoord {
         Some(new_world_coord)
     }
 
-    fn get_id(&self) -> usize {
+    pub fn get_id(&self) -> usize {
         let index_x = self.chunk_coord.0 * CHUNK_VOLUME + self.cube_coord.0;
         let index_y =
             self.chunk_coord.1 * WORLD_AREA * CHUNK_VOLUME + self.cube_coord.1 * CHUNK_AREA;
@@ -227,9 +237,9 @@ fn get_ao(
             direction_b = (-1, -1, 0);
             direction_c = (-1, 0, 0);
             direction_d = (-1, 1, 0);
-            direction_e = (1, 0, 0);
+            direction_e = (0, 1, 0);
             direction_f = (1, 1, 0);
-            direction_g = (0, 1, 0);
+            direction_g = (1, 0, 0);
             direction_h = (1, -1, 0);
         }
         // a
@@ -405,7 +415,7 @@ fn add_face(
 
     match cube_type {
         CubeTypes::Dirt => {
-            map_texture(uv_coord, 8, 4);
+            map_texture(uv_coord, 5, 3);
         }
         // CubeTypes::Stone => {
         //     map_texture(uv_coord, 5, 3);
@@ -446,10 +456,7 @@ fn build_mesh(
         for p_y in 0..CHUNK_SIZE {
             for p_z in 0..CHUNK_SIZE {
                 // let cube_coord = Vec3::new(p_x as f32, p_y as f32, p_z as f32);
-                let world_coord = VxWorldCoord {
-                    cube_coord: (p_x, p_y, p_z),
-                    chunk_coord: chunk_coord.clone(),
-                };
+                let world_coord = VxWorldCoord::new(chunk_coord.clone(), (p_x, p_y, p_z));
                 if get_cube_type(voxels, &world_coord) != CubeTypes::Empty {
                     let cube_type = get_cube_type(voxels, &world_coord);
                     let mut face_to_add: Vec<(FaceType, (u32, u32, u32, u32))> = Vec::new();
