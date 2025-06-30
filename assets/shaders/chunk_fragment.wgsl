@@ -12,12 +12,19 @@ const face_shading: array<f32, 6> = array(
     0.5, 0.8    // front, back
 );
 
+const ao_values: array<f32, 4> = array(
+    0.1,
+    0.25,
+    0.5,
+    1.0,
+);
+
 // Vertex shader input data mapping
 struct Vertex {
     @builtin(instance_index) instance_index: u32,
     @location(0) position: vec3<f32>,
     @location(1) vx_type: u32,
-    @location(2) vx_id: f32,
+    @location(2) vx_ao: u32,
 };
 
 // Vertex shader output data mapping
@@ -34,7 +41,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         get_world_from_local(vertex.instance_index),
         vec4<f32>(vertex.position, 1.0),
     );
-    out.hash_color = face_shading[vertex.vx_type];
+    out.hash_color = face_shading[vertex.vx_type] * ao_values[vertex.vx_ao];
     return out;
 }
 

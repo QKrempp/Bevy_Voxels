@@ -11,8 +11,8 @@ mod chunk;
 
 const ATTRIBUTE_VX_TYPE: MeshVertexAttribute =
     MeshVertexAttribute::new("VxType", 10000, VertexFormat::Uint32);
-const ATTRIBUTE_VX_ID: MeshVertexAttribute =
-    MeshVertexAttribute::new("VxId", 10001, VertexFormat::Float32);
+const ATTRIBUTE_VX_AO: MeshVertexAttribute =
+    MeshVertexAttribute::new("VxAo", 10001, VertexFormat::Uint32);
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct ChunkMaterial {
@@ -41,7 +41,7 @@ impl Material for ChunkMaterial {
         let vertex_layout = layout.0.get_layout(&[
             Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
             ATTRIBUTE_VX_TYPE.at_shader_location(1),
-            ATTRIBUTE_VX_ID.at_shader_location(2),
+            ATTRIBUTE_VX_AO.at_shader_location(2),
         ])?;
         descriptor.vertex.buffers = vec![vertex_layout];
         Ok(())
