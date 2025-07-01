@@ -1,5 +1,6 @@
 use core::f32;
 
+use bevy::image::{ImageLoaderSettings, ImageSampler};
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
 use bevy::render::mesh::MeshVertexAttribute;
@@ -119,7 +120,12 @@ pub fn spawn_world_model(
             Mesh3d(meshes.add(chunk.mesh)),
             MeshMaterial3d(materials.add(ChunkMaterial {
                 color: LinearRgba::WHITE,
-                color_texture: Some(asset_server.load("textures.png")),
+                color_texture: Some(asset_server.load_with_settings(
+                    "textures.png",
+                    |settings: &mut ImageLoaderSettings| {
+                        settings.sampler = ImageSampler::nearest();
+                    },
+                )),
             })),
             Transform::from_translation(
                 (CHUNK_SIZE as f32)

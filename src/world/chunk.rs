@@ -45,7 +45,7 @@ impl VxChunkMesh {
     pub fn new(coord: (usize, usize, usize), voxels: &[CubeTypes]) -> Self {
         let (vertices_coord, uv_coord, vertices_normal, vertices_order, vertices_type, vertices_ao) =
             build_mesh(voxels, &coord);
-        println!("Created chunk with coord {:?}", coord);
+        // println!("Created chunk with coord {:?}", coord);
         Self {
             mesh: Mesh::new(
                 PrimitiveTopology::TriangleList,

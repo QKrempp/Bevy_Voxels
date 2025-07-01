@@ -28,7 +28,7 @@ struct Vertex {
     @location(3) vx_ao: u32,
 };
 
-// Vertex shader output data mapping
+// Vertex shader output data mapping for passing to fragment shader
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) uv_coord: vec2<f32>,
@@ -48,32 +48,10 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     return out;
 }
 
-// Fragment shader input data mapping
-// struct FragmentInput {
-//     @location(0) uv_coord: vec2<f32>,
-//     @location(1) blend_color: f32,
-// };
-
-// // The fragment shader itself
-// @fragment
-// fn fragment(input: FragmentInput) -> @location(0) vec4<f32> {
-//     return material_color * input.blend_color;
-// }
-
-// Simulates nearest-neighbor interpolation on a linearly-interpolated texture
-fn texture_nearest(tex: texture_2d<f32>, samp: sampler, uv: vec2<f32>) -> vec4<f32> {
-    let tex_res = vec2<f32>(textureDimensions(material_color_texture));
-    return textureSample(tex, samp, (floor(uv * tex_res) + 0.5) / tex_res);
-}
-
-fn texture_normal(tex: texture_2d<f32>, samp: sampler, uv: vec2<f32>) -> vec4<f32> {
-    return textureSample(tex, samp, uv);
-}
-
+// The fragment shader itself
 @fragment
 fn fragment(
        input: VertexOutput,
 ) -> @location(0) vec4<f32> {
-    // return material_color;
-    return material_color * input.hash_color * texture_nearest(material_color_texture, material_color_sampler, input.uv_coord);
+    return material_color * input.hash_color * textureSample(material_color_texture, material_color_sampler, input.uv_coord);
 }
