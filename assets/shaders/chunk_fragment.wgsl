@@ -1,5 +1,6 @@
 // #import bevy_pbr::forward_io::VertexOutput
 #import bevy_pbr::mesh_functions::{get_world_from_local, mesh_position_local_to_clip}
+#import bevy_pbr::mesh_view_bindings::view
 
 @group(2) @binding(0) var<uniform> material_color: vec4<f32>;
 @group(2) @binding(1) var material_color_texture: texture_2d<f32>;
@@ -29,7 +30,7 @@ struct Vertex {
 };
 
 // Vertex shader output data mapping for passing to fragment shader
-struct VertexOutput {
+struct FragmentInput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) uv_coord: vec2<f32>,
     @location(1) hash_color: f32,
@@ -37,8 +38,8 @@ struct VertexOutput {
 
 // The vertex shader itself
 @vertex
-fn vertex(vertex: Vertex) -> VertexOutput {
-    var out: VertexOutput;
+fn vertex(vertex: Vertex) -> FragmentInput {
+    var out: FragmentInput;
     out.clip_position = mesh_position_local_to_clip(
         get_world_from_local(vertex.instance_index),
         vec4<f32>(vertex.position, 1.0),
@@ -51,7 +52,13 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 // The fragment shader itself
 @fragment
 fn fragment(
-       input: VertexOutput,
+       input: FragmentInput,
 ) -> @location(0) vec4<f32> {
-    return material_color * input.hash_color * textureSample(material_color_texture, material_color_sampler, input.uv_coord);
+    // Computing ambient occlusion
+    var shaded_color: vec4<f32> = material_color * input.hash_color;
+    var texture_color = textureSample(material_color_texture, material_color_sampler, input.uv_coord);
+    var fog_dist = 1 - exp(-0.0000007/(input.clip_position.z * input.clip_position.z));
+    var fog_color: vec4<f32> = vec4f(0.22, 0.22, 0.78, 0.0);
+
+    return mix(shaded_color * texture_color, fog_color, fog_dist);
 }

@@ -233,14 +233,14 @@ fn get_ao(
             direction_g = (1, 0, 0);
             direction_h = (1, 0, -1);
         } else {
-            direction_a = (0, -1, 0);
+            direction_a = (-1, 0, 0);
             direction_b = (-1, -1, 0);
-            direction_c = (-1, 0, 0);
-            direction_d = (-1, 1, 0);
-            direction_e = (0, 1, 0);
+            direction_c = (0, -1, 0);
+            direction_d = (1, -1, 0);
+            direction_e = (1, 0, 0);
             direction_f = (1, 1, 0);
-            direction_g = (1, 0, 0);
-            direction_h = (1, -1, 0);
+            direction_g = (0, 1, 0);
+            direction_h = (-1, 1, 0);
         }
         // a
         if is_void(voxels, &new_world_coord, &direction_a) {
@@ -355,17 +355,17 @@ fn add_face(
         }
         FaceType::Back => {
             v0 = Vec3::new(-0.5, -0.5, 0.5);
-            v1 = Vec3::new(0.5, -0.5, 0.5);
+            v1 = Vec3::new(-0.5, 0.5, 0.5);
             v2 = Vec3::new(0.5, 0.5, 0.5);
-            v3 = Vec3::new(-0.5, 0.5, 0.5);
+            v3 = Vec3::new(0.5, -0.5, 0.5);
             normal = Vec3::Z;
             v_type = 4;
         }
         FaceType::Front => {
             v0 = Vec3::new(-0.5, -0.5, -0.5);
-            v1 = Vec3::new(0.5, -0.5, -0.5);
+            v1 = Vec3::new(-0.5, 0.5, -0.5);
             v2 = Vec3::new(0.5, 0.5, -0.5);
-            v3 = Vec3::new(-0.5, 0.5, -0.5);
+            v3 = Vec3::new(0.5, -0.5, -0.5);
             normal = Vec3::NEG_Z;
             v_type = 5;
         }
@@ -389,7 +389,7 @@ fn add_face(
     // 3     2     3     2
 
     let vertex_order: Vec<u32>;
-    if face_type == FaceType::Right || face_type == FaceType::Bottom || face_type == FaceType::Back
+    if face_type == FaceType::Right || face_type == FaceType::Bottom || face_type == FaceType::Front
     {
         if face_ao.1 + face_ao.3 < face_ao.0 + face_ao.2 {
             vertex_order = vec![0, 1, 2, 2, 3, 0];
@@ -414,9 +414,11 @@ fn add_face(
     }
 
     match cube_type {
-        CubeTypes::Dirt => {
-            map_texture(uv_coord, 5, 3);
-        }
+        CubeTypes::Dirt => match face_type {
+            FaceType::Top => map_texture(uv_coord, 11, 16),
+            FaceType::Bottom => map_texture(uv_coord, 6, 8),
+            _ => map_texture(uv_coord, 10, 12),
+        },
         // CubeTypes::Stone => {
         //     map_texture(uv_coord, 5, 3);
         // }
