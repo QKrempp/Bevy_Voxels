@@ -13,12 +13,17 @@ const face_shading: array<f32, 6> = array(
     0.5, 0.8    // front, back
 );
 
+// Defining the ambient occlusion values according to the vertex's surrounding voxels
 const ao_values: array<f32, 4> = array(
-    0.1,
-    0.25,
-    0.5,
-    1.0,
+    0.1,  // No surrounding
+    0.25, // 1 voxel
+    0.5,  // 2 voxels
+    1.0,  // 3 voxels
 );
+
+// Defining fog color (Why is it different from the Rust Code ?)
+const fog_color: vec4<f32> = vec4f(0.22, 0.22, 0.78, 0.0);
+
 
 // Vertex shader input data mapping
 struct Vertex {
@@ -56,9 +61,10 @@ fn fragment(
 ) -> @location(0) vec4<f32> {
     // Computing ambient occlusion
     var shaded_color: vec4<f32> = material_color * input.hash_color;
+    // Sampling texture
     var texture_color = textureSample(material_color_texture, material_color_sampler, input.uv_coord);
+    // Computing a factor between 0 and 1 to create a fog effect based on the distance to the camera
     var fog_dist = 1 - exp(-0.0000007/(input.clip_position.z * input.clip_position.z));
-    var fog_color: vec4<f32> = vec4f(0.22, 0.22, 0.78, 0.0);
 
     return mix(shaded_color * texture_color, fog_color, fog_dist);
 }
